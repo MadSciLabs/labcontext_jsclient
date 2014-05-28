@@ -7,8 +7,8 @@
 	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
 	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
 	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
-	<script type="text/javascript" src="js/sb-1.4.0.js"></script>
-	<script type="text/javascript" src="js/sb-admin-0.1.4.js"></script>
+	<script type="text/javascript" src="js/sb.js"></script>
+	<script type="text/javascript" src="js/sb-admin.js"></script>
 
     <script type="text/javascript">
 
@@ -32,7 +32,7 @@
 			//Create Client using Username
 			var client_name = "chuckshick";
 			var random_id = "0000" + Math.floor(Math.random() * 10000);
-			var app_name = client_name; // + random_id.substring(random_id.length-4);
+			var app_name = client_name; //+ random_id.substring(random_id.length-4);
 
 			sb = new Spacebrew.Client();
 			sb.extend(Spacebrew.Admin)
@@ -40,21 +40,27 @@
 			sb.description("This is the JS client for Lab Contextual Controls");
 
 // triggered when new client connects to server.
-sb.onNewClient = function( client ) {};
+sb.onNewClient = function( client ) {
+	console.log("New client");
+};
 
 // triggered when existing client is reconfigured.
-sb.onUpdateClient = function( client ) {};
+sb.onUpdateClient = function( client ) {
+	console.log("Update client");
+};
 
 // triggered when an existing client disconnects from server.
 sb.onRemoveClient = function ( name, address) {};
 
 // triggered when a route is added or removed.
-sb.onUpdateRoute = function ( action, pub, sub ) {};
+sb.onUpdateRoute = function ( action, pub, sub ) {
+	console.log("Update route");
+};
 
 			sb.addPublish("Slider pub", "range", "500");
 
 			// connect to spacbrew
-			sb.onRangeMessage = onRangeMessage;
+			//sb.onRangeMessage = onRangeMessage;
 			sb.onOpen = onSpacebrewOpen;
 
 			sb.connect();
@@ -62,16 +68,45 @@ sb.onUpdateRoute = function ( action, pub, sub ) {};
 			
 		}
 
-
 		function onSpacebrewOpen() {
 			var message = "Now connected as <strong>" + sb.name() + "</strong>. ";
 			if (sb.name() === app_name) {
 				message += "<br>You can customize this app's name in the query string by adding <strong>name=your_app_name</strong>."
 			}
 			$("#name").html( message );
+		}
+
+		function makeConnection()
+		{
+			var ip = "208.184.43.110";
+
+			var me_name = "chuckshick";
+			var me_widget = "Slider pub";
+			var me_widget_2 = "Slider pub";
+
+			var you_name = "JS Client";
+			var you_widget = "range1";
+			var you_widget_2 = "range2";
+
+/*
+console.log("Make Connection");
+me = sb.getClient("chuckshick", ip);
+console.log("get client 1");
+you = sb.getClient("JS Client", ip);
+console.log("get client 2");
+
+//console.log(you);
+console.log(you.name);
+console.log(you.remoteAddress);
+
+//console.log(me);
+console.log(me.name);
+console.log(me.remoteAddress);
+*/
 
 			//Make Route
-			sb.addRoute("chuckshick","208.184.43.110","Slider pub","JS Client","208.184.43.110","range1");	
+			sb.addRoute(me_name,ip,me_widget,you_name,ip,you_widget);	
+			sb.addRoute(me_name,ip,me_widget_2,you_name,ip,you_widget_2);	
 			console.log("Making connection");
 		}
 
@@ -79,6 +114,7 @@ sb.onUpdateRoute = function ( action, pub, sub ) {};
 		 * setupSpacebrew Function that creates and configures the connection to the Spacebrew server.
 		 * 				  It is called when the page loads.
 		 */
+
 /*
 		function setupSpacebrew (){
 			var random_id = "0000" + Math.floor(Math.random() * 10000)
@@ -148,12 +184,15 @@ sb.onUpdateRoute = function ( action, pub, sub ) {};
 </head> 
 <body> 
 
+
 <div data-role="page">
 	<div data-role="header">
 		<h1>SpaceBrew Sliders</h1>
 	</div>
 
 	<div data-role="content">	
+<a href="javascript:makeConnection()"> test </a>
+
 		<form id="defaults">
 			<label for="slider1">Input Slider 1:</label>
 			<input type="range" class="slider" name="slider" id="slider1" value="500" min="0" max="1023"  />
