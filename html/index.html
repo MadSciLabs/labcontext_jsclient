@@ -57,6 +57,7 @@
 
 			//sb.onRangeMessage = onRangeMessage;
 			sb.onOpen = onSpacebrewOpen;
+			sb.onBooleanMessage = onBooleanMessage;
 
 			var request = $.ajax({
                         dataType: "json",
@@ -194,6 +195,26 @@
 			console.log("Received new range message ", value);
 			$("#"+name).slider('refresh', value);
 		};
+
+                /**
+                 * onBooleanMessage Function that is called whenever new spacebrew boolean messages are received.
+                 *          It accepts two parameters:
+                 * @param  {String} name    Holds name of the subscription feed channel
+                 * @param  {Boolean} value  Holds value received from the subscription feed
+                 */
+                function onBooleanMessage( name, value ){
+                        console.log("[onBooleanMessage] boolean message received ", value);
+                        if (value) {
+                        document.body.style.background = "rgb(100,255,100)";
+                        } else {
+                        document.body.style.background = "rgb(220,220,220)";
+                        }
+                }
+
+	        function onButtonPress (evt) {
+                        console.log("[onButtonPress] button has been pressed");
+                	sb.send("buttonPress", "boolean", "true");
+                }
 
     </script>
 
