@@ -1,7 +1,7 @@
 <!DOCTYPE html> 
 <html> 
 <head> 
-	<title>Spacebrew Sliders (Range Example)</title> 
+	<title>The Lab - Context </title> 
 
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/> <!--320-->
  
@@ -12,13 +12,9 @@
 	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
 	<script type="text/javascript" src="js/sb.js"></script>
 	<script type="text/javascript" src="js/sb-admin.js"></script>
-    	
+   	<script type="text/javascript" src="js/labcontext.js"></script> 
+		
 	<script type="text/javascript">
-
-		$.urlParam = function(name){
-    			var results = new RegExp('[\?&amp;]' + name + '=([^&amp;#]*)').exec(window.location.href);
-    			return results[1] || 0;
-		}
 
     		function getip(json){
       			ip = json.ip; // alerts the ip address
@@ -27,38 +23,25 @@
     		// when page loads call spacebrew setup function 
 		$(window).on("load", createSBInstance);
 
-		// wher the jquery mobile is ready to initialize the UI call the setUI function 
-		//$(document).bind("pageinit", setupUI);
-
 		// Spacebrew Object
 		var sb , app_name = "default" , values = {} ;
 
 		//Object to hold interaction parameters
-	 	interaction = {};
-
-		//Grab the URL variables
-		_user = unescape(window.getQueryString("user"));
-		_uuid = unescape(window.getQueryString("uuid"));
-		interaction.type = unescape(window.getQueryString("type"));				
-
-		url_interaction = "http://lab.madsci1.havasworldwide.com/context/" + _uuid;
-		app_me = "";
-		app_you = "";
-		var connection_data;
-		var ip = ""; //var ip = "208.184.43.110";
-
-		model_interaction = "context.interaction";
-
-		console.log("client > " + _user);
-		console.log("type > " + interaction.type);
-		console.log("uuid > " + _uuid);
-		console.log("url > " + url_interaction);
-
+	 	var interaction = {}, _user, _uuid;
+		var app_me = "", app_you = "", connection_data;
+		var ip = "", url_interaction, model_interation;
 
 		/*
 		*	SET UP AN INSTANCE OF AN INTERACTION
 		*/
 		function createSBInstance () {
+
+			//Grab the URL variables
+			_user = unescape(window.getQueryString("user"));
+			_uuid = unescape(window.getQueryString("uuid"));
+			interaction.type = unescape(window.getQueryString("type"));				
+			url_interaction = "http://lab.madsci1.havasworldwide.com/context/" + _uuid;
+			model_interaction = "context.interaction";
 
 			//$(".pushbutton").on("mousedown", onButtonPress);
 			$(".pushbutton").live('vmousedown', function(evt) { 
