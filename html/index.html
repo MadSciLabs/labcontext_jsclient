@@ -3,19 +3,26 @@
 <head> 
 	<title>Spacebrew Sliders (Range Example)</title> 
 
-	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/> <!--320-->
+ 
 	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<link rel="stylesheet" href="css/style.css" />
+
 	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
 	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
 	<script type="text/javascript" src="js/sb.js"></script>
 	<script type="text/javascript" src="js/sb-admin.js"></script>
-
-    	<script type="text/javascript">
+    	
+	<script type="text/javascript">
 
 		$.urlParam = function(name){
     			var results = new RegExp('[\?&amp;]' + name + '=([^&amp;#]*)').exec(window.location.href);
     			return results[1] || 0;
 		}
+
+    		function getip(json){
+      			ip = json.ip; // alerts the ip address
+    		}
 
     		// when page loads call spacebrew setup function 
 		$(window).on("load", createSBInstance);
@@ -26,18 +33,19 @@
 		// Spacebrew Object
 		var sb , app_name = "default" , values = {} ;
 
+		//Object to hold interaction parameters
 	 	interaction = {};
 
 		//Grab the URL variables
 		_user = unescape(window.getQueryString("user"));
-		interaction.type = unescape(window.getQueryString("type"));				
 		_uuid = unescape(window.getQueryString("uuid"));
+		interaction.type = unescape(window.getQueryString("type"));				
 
 		url_interaction = "http://lab.madsci1.havasworldwide.com/context/" + _uuid;
 		app_me = "";
 		app_you = "";
 		var connection_data;
-		var ip = "72.225.168.21";
+		var ip = ""; //var ip = "208.184.43.110";
 
 		model_interaction = "context.interaction";
 
@@ -45,11 +53,21 @@
 		console.log("type > " + interaction.type);
 		console.log("uuid > " + _uuid);
 		console.log("url > " + url_interaction);
-	
+
+
 		/*
 		*	SET UP AN INSTANCE OF AN INTERACTION
 		*/
 		function createSBInstance () {
+
+			//$(".pushbutton").on("mousedown", onButtonPress);
+			$(".pushbutton").live('vmousedown', function(evt) { 
+			//$(".pushbutton").vmousedown(function(evt) {
+				//onButtonPress;
+                        console.log("[onButtonPress] button has been pressed");
+                        console.log(evt.target.id);
+                	sb.send(evt.target.id, "boolean", "true");
+			});
 
 			//Get Interaction Set
 			sb = new Spacebrew.Client();
@@ -105,7 +123,7 @@
 						sb.addSubscribe(_fields['name'], _fields['dataType']);
 					}
 				}
-			
+
 				console.log("* Setting up spacebrew connection");
 				sb.connect();
 
@@ -119,9 +137,10 @@
 
 
 		/*
-		*	MAKE SB CONNECTION
+		*	MAKE SB CONNECTION ... THIS HAPPENS ON CLIENT SIDE ONCE SB OBJECTS CREATED
 		*/
 		function makeSBConnections() {
+
 /*
 			// triggered when new client connects to server.
 			sb.onNewClient = function( client ) { console.log("New client"); };
@@ -136,7 +155,6 @@
 			sb.onUpdateRoute = function ( action, pub, sub ) { console.log("Update route"); };
 */
 
-
 			console.log("* Making connection");
 
 			//For each Spacebrew connection
@@ -148,7 +166,6 @@
 				sb.addRoute(interaction.connection,ip,_fields['name'],interaction.server_name,ip,_fields['name']);	
 				console.log(">" + interaction.connection+","+ip+","+_fields['name']+","+interaction.server_name+","+ip+","+_fields['name']);	
 			}
-
 		}
 
 
@@ -162,10 +179,6 @@
 				message += "<br>You can customize this app's name in the query string by adding <strong>name=your_app_name</strong>."
 			}
 			$("#name").html( message );
-
-			if (interaction.type == "client") {
-				//makeSBConnections();
-			}
 		}
 
 
@@ -203,43 +216,49 @@
                  * @param  {Boolean} value  Holds value received from the subscription feed
                  */
                 function onBooleanMessage( name, value ){
-                        console.log("[onBooleanMessage] boolean message received ", value);
-                        if (value) {
-                        document.body.style.background = "rgb(100,255,100)";
-                        } else {
-                        document.body.style.background = "rgb(220,220,220)";
-                        }
+                        console.log(name + " " + value);
                 }
 
 	        function onButtonPress (evt) {
                         console.log("[onButtonPress] button has been pressed");
-                	sb.send("buttonPress", "boolean", "true");
+                        console.log(evt.target.id);
+                	sb.send(evt.target.id, "boolean", "true");
                 }
 
     </script>
 
-</head> 
+    <script type="application/javascript" src="http://jsonip.appspot.com/?callback=getip"></script>
+</head>
+
 <body> 
 
+<div id="main">
 
-<div data-role="page">
-	<div data-role="header">
-		<h1>SpaceBrew Sliders</h1>
+	<div id="header">
+		The Lab - Contextual Controls Client
 	</div>
 
-	<div data-role="content">	
-<a href="javascript:makeSBConnections()"> test </a>
+	<div id="connection">
+		not connected
+	</div>
 
-		<form id="defaults">
-			<label for="slider1">Input Slider 1:</label>
-			<input type="range" class="slider" name="slider" id="slider1" value="500" min="0" max="1023"  />
-			<label for="slider2">Input Slider 2:</label>
-			<input type="range" class="slider" name="slider" id="slider2" value="500" min="0" max="1023"  />
-			<label for="slider3">Input Slider 3:</label>
-			<input type="range" class="slider" name="slider" id="slider3" value="500" min="0" max="1023"  />
-		</form>
+	<div id="content">	
 
 		</br></br>
+		<a href="javascript:alert('tst');makeSBConnections()"> connect </a>
+		</br></br>
+		</br></br>
+
+		<div style="width:500;float:left">
+
+		<div id="fire" class="pushbutton">fire</div>		
+		<div id="thrust" class="pushbutton">thrust</div>		
+		<div id="right" class="pushbutton">right</div>		
+		<div id="left" class="pushbutton">left</div>		
+		</div>
+
+		</br></br>
+
 		<div id="name">Trying to connect</div>
 
 	</div><!-- /content -->
