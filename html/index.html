@@ -36,11 +36,13 @@
 		url_interaction = "http://lab.madsci1.havasworldwide.com/context/" + _uuid;
 		app_me = "";
 		app_you = "";
+		var connection_data;
+		var ip = "72.225.168.21";
 
 		model_interaction = "context.interaction";
 
-		console.log("client > " + _client);
-		console.log("type > " + _type);
+		console.log("client > " + _user);
+		console.log("type > " + interaction.type);
 		console.log("uuid > " + _uuid);
 		console.log("url > " + url_interaction);
 	
@@ -61,24 +63,29 @@
                         url: url_interaction,
                         success: function(data) {
 
+				connection_data = data;
+
 				//Get Interaction info
 				_row = data[0]
 				if (_row) {
 					interaction.num_users = _row.fields['num_users'];
 					interaction.client_name = _row.fields['client_name'];
+					interaction.server_name = _row.fields['server_name'];
 					interaction.name = _row.fields['name'];
 					interaction.description = _row.fields['description'];
 
 					if (interaction.type == "client") {
-						interaction.server = _row.fields['client_name'];
-					} else {
-						interaction.server = _row.fields['server_name'];
-					}
-					interaction.server += "_" + _user;
+						var random_id = "0000" + Math.floor(Math.random() * 10000);
+						var random_id = random_id.substring(random_id.length-4);
 
-					console.log("Interaction Sever : " + interaction.server);
+						interaction.connection = _row.fields['client_name'] + "_" + _user + random_id;
+					} else {
+						interaction.connection = _row.fields['server_name'];
+					}
+
+					console.log("Interaction Sever : " + interaction.connection);
 	
-					sb.name(interaction.server);
+					sb.name(interaction.connection);
 					sb.description(interaction.description);
 				}
 
@@ -98,28 +105,23 @@
 					}
 				}
 			
-				console.log("Setting up spacebrew connection");
+				console.log("* Setting up spacebrew connection");
 				sb.connect();
+
                         },
                         timeout: 8000
 
                		}).fail( function( xhr, status ) {
 				console.log("fail");
                 	})
-
-/*
-			//Create Client using Username
-			//var random_id = "0000" + Math.floor(Math.random() * 10000);
-			var app_name = client_name; //+ random_id.substring(random_id.length-4);
-
-
-
-*/
-
 		}
 
-		function makeSBConnections() {
 
+		/*
+		*	MAKE SB CONNECTION
+		*/
+		function makeSBConnections() {
+/*
 			// triggered when new client connects to server.
 			sb.onNewClient = function( client ) { console.log("New client"); };
 
@@ -131,40 +133,27 @@
 
 			// triggered when a route is added or removed.
 			sb.onUpdateRoute = function ( action, pub, sub ) { console.log("Update route"); };
-
-			var ip = "208.184.43.110";
-
-			var me_name = "chuckshick";
-			var me_widget = "Slider pub";
-			var me_widget_2 = "Slider pub";
-
-			var you_name = "JS Client";
-			var you_widget = "range1";
-			var you_widget_2 = "range2";
-
-/*
-console.log("Make Connection");
-me = sb.getClient("chuckshick", ip);
-console.log("get client 1");
-you = sb.getClient("JS Client", ip);
-console.log("get client 2");
-
-//console.log(you);
-console.log(you.name);
-console.log(you.remoteAddress);
-
-//console.log(me);
-console.log(me.name);
-console.log(me.remoteAddress);
 */
 
-			//Make Route
-			sb.addRoute(me_name,ip,me_widget,you_name,ip,you_widget);	
-			sb.addRoute(me_name,ip,me_widget_2,you_name,ip,you_widget_2);	
-			console.log("Making connection");
+
+			console.log("* Making connection");
+
+			//For each Spacebrew connection
+			for (i=1; i<connection_data.length; i++) {
+
+                               	_fields = connection_data[i].fields;
+			
+				//Make Route
+				sb.addRoute(interaction.connection,ip,_fields['name'],interaction.server_name,ip,_fields['name']);	
+				console.log(">" + interaction.connection+","+ip+","+_fields['name']+","+interaction.server_name+","+ip+","+_fields['name']);	
+			}
+
 		}
 
 
+		/*
+		*	ON SPACEBREW OPEN
+		*/
 		function onSpacebrewOpen() {
 
 			var message = "Now connected as <strong>" + sb.name() + "</strong>. ";
@@ -173,51 +162,12 @@ console.log(me.remoteAddress);
 			}
 			$("#name").html( message );
 
-			//makeSBMakeConnections();
-		}
-
-		/**
-		 * setupSpacebrew Function that creates and configures the connection to the Spacebrew server.
-		 * 				  It is called when the page loads.
-		 */
-
-/*
-		function setupSpacebrew (){
-			var random_id = "0000" + Math.floor(Math.random() * 10000)
-				;
-
-			app_name = app_name + ' ' + random_id.substring(random_id.length-4);
-
-			console.log("Setting up spacebrew connection");
-			sb = new Spacebrew.Client();
-
-			sb.name(app_name);
-			sb.description("This is the JS client for Lab Contextual Controls");
-
-			// configure the publication and subscription feeds
-			sb.addPublish("slider pub", "range", "500");
-			sb.addSubscribe("slider sub", "range");
-
-			// override Spacebrew events - this is how you catch events coming from Spacebrew
-			sb.onRangeMessage = onRangeMessage;
-			sb.onOpen = onOpen;
-
-			// connect to spacbrew
-			sb.connect();
-		};
-*/
-		/**
-		 * Function that is called when Spacebrew connection is established
-		 */
-/*
-		function onOpen() {
-			var message = "Connected as <strong>" + sb.name() + "</strong>. ";
-			if (sb.name() === app_name) {
-				message += "<br>You can customize this app's name in the query string by adding <strong>name=your_app_name</strong>."
+			if (interaction.type == "client") {
+				//makeSBConnections();
 			}
-			$("#name").html( message );
 		}
-*/
+
+
 
 		/**
 		 * setupUI Function that create the event listeners for the sliders. It creates an callback
@@ -257,7 +207,7 @@ console.log(me.remoteAddress);
 	</div>
 
 	<div data-role="content">	
-<a href="javascript:makeConnection()"> test </a>
+<a href="javascript:makeSBConnections()"> test </a>
 
 		<form id="defaults">
 			<label for="slider1">Input Slider 1:</label>
