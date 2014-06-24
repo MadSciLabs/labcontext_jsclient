@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ASTEROIDS</title>
+
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+
+<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+<script type="text/javascript" src="js/sb.js"></script>
+<script type="text/javascript" src="js/sb-admin.js"></script>
+<script type="text/javascript" src="js/labcontext.js"></script>
+
+<script type="text/javascript">
+
+	//window.addEventListener('load', eventWindowLoaded, false);
+
+
+        // when page loads call spacebrew setup function
+                $(window).on("load", eventWindowLoaded );
+
+                // Spacebrew Object
+                var sb , app_name = "default" , values = {} ;
+
+                //Lab Context Object to hold interaction parameters
+                var connection_data;
+                var interaction = {};
+                var ip = "72.225.168.21";
+
+
+                /*
+                *       ON SPACEBREW OPEN
+                */
+                function onSpacebrewOpen() {
+
+                        var message = "Now connected as <strong>" + sb.name() + "</strong>. ";
+                        if (sb.name() === app_name) {
+                                message += "<br>You can customize this app's name in the query string by adding <strong>name=your_app_name</strong>."
+                        }
+                        $("#name").html( message );
+                }
+
+
+                /**
+                 * onRangeMessage Function that is called whenever new spacebrew range messages are received.
+                 *                                It accepts two parameters:
+                 * @param  {String} name        Holds name of the subscription feed channel
+                 * @param  {Integer} value      Holds value received from the subscription feed
+                 */
+                function onRangeMessage(name, value){
+                        console.log("Received new range message ", value);
+                        $("#"+name).slider('refresh', value);
+                };
+
+                /**
+                 * onBooleanMessage Function that is called whenever new spacebrew boolean messages are received.
+                 *          It accepts two parameters:
+                 * @param  {String} name    Holds name of the subscription feed channel
+                 * @param  {Boolean} value  Holds value received from the subscription feed
+                 */
+                function onBooleanMessage( name, value ) {
+
+                        console.log(name + " " + value);
+		
+			//OVERRIDE KEY PRESSED LIST WITH SPACEBREW INFO
+			if (name == "left_on") {
+				keyPressList[37]=true;
+			}
+			if (name == "left_off") {
+				keyPressList[37]=false;
+			}
+			if (name == "right_on") {
+				keyPressList[39]=true;
+			}
+			if (name == "right_off") {
+				keyPressList[39]=false
+			}
+			if (name == "thrust_on") {
+				keyPressList[38]=true;
+			}
+			if (name == "thrust_off") {
+				keyPressList[38]=false;
+			}
+			if (name == "fire_on") {
+				keyPressList[70]=true;
+			}
+			if (name == "fire_off") {
+				keyPressList[70]=false;
+			}
+                }
+
+
+
+/*****
+ * 	Class
+ */
+function obj_vector(x,y)
+{
+	this.x = x;
+	this.y = y;
+}
+
+function math_sqr(x)
+{
+	return x*x;	
+}
+
+function eventWindowLoaded() {
+
+createSBInstance();
+	canvasApp();	
+}
+
+function canvasApp()
+{
+	console.log(window.innerWidth + " " + window.innerHeight);
+
+	theCanvas = document.getElementById('canvas');
+	theCanvas.height = window.innerHeight;
+	theCanvas.width = window.innerWidth;
+	FRAME_SIZE_W = window.innerWidth;
+	FRAME_SIZE_H = window.innerHeight;
+
+
+  	if (!theCanvas || !theCanvas.getContext) {
+    		return;
+  	}
+  
+  	context = theCanvas.getContext('2d');
+	if (!context) {
+   	 	return;
+  	}
+
+	function init_ship() {
+
+		_ship = new obj_ship(FRAME_SIZE_W/2,FRAME_SIZE_H/2);
+	}
+	
+	function run_game() {
+		current_state_function();		
+	}
+
+	function init() {
+
+		init_ship();
+
+		for (var i=0; i<NUM_ROIDS; i++)
+		{
+			_asteroids[i] = new obj_asteroid();
+			_asteroids[i].init(4);
+		}
+
+		set_state(STATE_PLAY);
+		setInterval(run_game, intervalTime);
+	}
+
+        function run_keurig() {
+
+	}
+
+	function run_play() {
+		
+		checkKeys();
+		updateShip();
+		updateAsteroids();
+		updateLasers();
+		checkCollisions();
+		renderScreen();	
+	}
+
+	function run_die() {
+		
+		//console.log("RUN DIE");
+
+		updateShip();
+		updateAsteroids();
+		updateLasers();
+		renderScreen();
+		
+		if (_ship.explosion.life > EXPLOSION_LIFE)
+		{
+			init_ship();
+			set_state(STATE_PLAY);
+		}
+	}
+
+	/*****
+	 * STATE FUNCTIONS
+	 */
+	function advance_state() {
+		
+		switch(current_state)
+		{
+			case STATE_TITLE:
+				break;
+			case STATE_PLAY:
+				current_state++;
+  				current_state_function = run_die();
+  				break;
+			case STATE_DIE:
+				break;
+			
+		}
+	}
+
+	function set_state(to_state) {
+		
+		current_state = to_state;
+		switch(to_state)
+		{
+			case STATE_PLAY:
+  				current_state_function = run_play;
+  				break;
+			case STATE_DIE:
+				console.log("SET CURRENT FUNCTION");
+  				current_state_function = run_die;
+				break;
+		}
+	}
+
+	/******
+	 * STATE SUPPORT FUNCTIONS
+	 */
+	function checkKeys() {
+
+		//check keys
+		if (keyPressList[38]==true){
+			_ship.thrust = true;
+			_ship.thrust_count++;
+
+			if (_ship.thrust_acceleration < SHIP_MAX_THRUST)	
+			{_ship.thrust_acceleration += SHIP_THRUST;}
+
+			var angleInRadians = (_ship.rotation - 90) * Math.PI / 180;
+			facingX=Math.cos(angleInRadians);
+			facingY=Math.sin(angleInRadians);
+			
+			_ship.vmove.x += _ship.thrust_acceleration * facingX;
+			_ship.vmove.y += _ship.thrust_acceleration * facingY;
+
+			speed = Math.sqrt(_ship.vmove.x * _ship.vmove.x + _ship.vmove.y * _ship.vmove.y);
+			//console.log(speed);
+
+		} else {
+			_ship.thrust = false;
+			_ship.thrust_count = 0;
+			_ship.thrust_acceleration = 0;
+		}
+
+		if (keyPressList[37]==true) {
+			//rotate counter-clockwise
+			_ship.rotate(-SHIP_ROTATIONAL_VELOCITY);
+		}
+		
+		if (keyPressList[39]==true) {
+			//rotate clockwise
+			_ship.rotate(SHIP_ROTATIONAL_VELOCITY);
+		}
+		
+		if (keyPressList[70]==true) {
+
+			if (!_ship.shooting)
+			{
+				_ship.shooting = true;
+				size = _lasers.length;
+				
+				if (size < 5)
+				{
+					_lasers[size] = new obj_laser();
+					_lasers[size].init();
+				}
+			}
+		}
+		else
+		{
+			_ship.shooting = false;
+		}
+	}
+
+	function updateShip()
+	{
+		_ship.update();
+	}
+	
+	function updateAsteroids()
+	{
+		for (var i=0; i<_asteroids.length; i++)
+		{
+			_asteroids[i].update();
+		}
+	}
+
+	function updateLasers()
+	{
+		for (var i=0; i<_lasers.length; i++)
+		{
+			if (!_lasers[i].update())
+			{
+				_lasers.splice(i,1);
+			}
+		}
+	}
+
+	function checkCollisions()
+	{
+ 		for (var i=0; i<_asteroids.length; i++)
+		{
+			if(_asteroids[i].checkShipCollision() == true)
+			{
+				set_state(STATE_DIE);
+			}
+			
+			if(_asteroids[i].checkLaserCollisions() == true)
+			{
+				cur_size = _asteroids[i].size;
+				cur_v = _asteroids[i].vloc;
+
+				_asteroids.splice(i,1);
+				
+				if (cur_size > 1)
+				{
+					n_size = cur_size / 2;
+					l = _asteroids.length;
+console.log("NEW size" + n_size + " length" + l);
+
+					_asteroids[l] = new obj_asteroid();
+					_asteroids[l].init(n_size,cur_v);
+
+					l = _asteroids.length;
+					_asteroids[l] = new obj_asteroid();
+					_asteroids[l].init(n_size,cur_v);
+				}
+
+			}
+		}
+	}
+
+	function renderScreen() {
+		
+		context.fillStyle = '#000000';
+  		context.fillRect(0, 0, FRAME_SIZE_W, FRAME_SIZE_H);
+  		
+		_ship.render();
+
+		for (var i=0; i<_asteroids.length; i++)
+		{
+			_asteroids[i].render();		
+		}
+		
+		for (var i=0; i<_lasers.length; i++)
+		{
+			_lasers[i].render();		
+		}
+
+	}
+
+	//Init Game
+	init();
+
+	//setInterval(current_state_function, intervalTime);
+
+	document.onkeydown=function(e){
+
+		console.log("key " + e.keyCode);
+
+		e=e?e:window.event;
+		keyPressList[e.keyCode]=true;
+	};
+
+	document.onkeyup=function(e){
+
+		e=e?e:window.event;
+		keyPressList[e.keyCode]=false;
+	};
+
+}
+
+	const FRAME_RATE=40;
+	var FRAME_SIZE_W=800;
+	var FRAME_SIZE_H=600;
+	
+	const SHIP_ROTATIONAL_VELOCITY = 4.0;
+	const SHIP_THRUST = .01;
+	const SHIP_MAX_THRUST = .3;
+
+	const LASER_SPEED = 6;
+	const STATE_TITLE = 0;
+	const STATE_PLAY = 1;
+	const STATE_DIE = 2;
+
+	const NUM_ROIDS = 8;
+	const ROID_FULL_SIZE = 50.0;
+	const EXPLOSION_LIFE = 60;
+
+	var intervalTime= 1000 / FRAME_RATE;
+	var keyPressList = [];
+
+	//create object
+	var _ship = {};
+	var _asteroids = [];
+	var _lasers = [];
+	
+	//canvas objects
+	var theCanvas;
+	var context;
+
+	var state_functions = {};
+	var current_state_function;
+	
+
+</script> 
+
+<script type="text/javascript" src="html5_asteroids.explosion.js"></script>
+<script type="text/javascript" src="html5_asteroids.asteroid.js"></script>
+<script type="text/javascript" src="html5_asteroids.ship.js"></script>
+
+</head>
+<body style="padding:0; margin:0;overflow:hidden;background:#000000">
+<div style="position: absolute; top: 0px; left: 0px;">
+<canvas id="canvas" width="800" height="600">
+ Your browser does not support the HTML 5 Canvas. 
+</canvas>
+</div>
+</body>
+</html>

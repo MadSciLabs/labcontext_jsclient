@@ -26,8 +26,18 @@
 		//Lab Context Object to hold interaction parameters
 		var connection_data;
 	 	var interaction = {};
-		var ip = "72.225.168.21";
+		var ip = ""; //"72.225.168.21";
 
+
+		$(".pushbutton_onoff").live('vmousedown', function(evt) {
+                        console.log(evt.target.id + "_on");
+                	sb.send(evt.target.id + "_on", "boolean", "true");
+                });
+
+		$(".pushbutton_onoff").live('vmouseup', function(evt) {
+                        console.log(evt.target.id + "_off");
+                	sb.send(evt.target.id + "_off", "boolean", "true");
+                });
 
 		/*
 		*	ON SPACEBREW OPEN
@@ -95,10 +105,10 @@
 
 		<div style="width:500;float:left">
 
-		<div id="fire" class="pushbutton">fire</div>		
-		<div id="thrust" class="pushbutton">thrust</div>		
-		<div id="right" class="pushbutton">right</div>		
-		<div id="left" class="pushbutton">left</div>		
+		<div id="fire" class="pushbutton_onoff">fire</div>		
+		<div id="thrust" class="pushbutton_onoff">thrust</div>		
+		<div id="right" class="pushbutton_onoff">right</div>		
+		<div id="left" class="pushbutton_onoff">left</div>		
 		</div>
 
 		</br></br>
